@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>星雲製作</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      background: #fffaf3;
+      color: #5c3c27;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    input, textarea {
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 10px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    .lyrics-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    textarea {
+      flex: 2;
+      min-width: 280px;
+      height: 200px;
+      resize: vertical;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin: 8px 5px 8px 0;
+      background: #e07a5f;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #d3614f;
+    }
+    audio {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      width: 90%;
+      max-width: 600px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .active-line {
+      background-color: #fff3b0;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <h2>星雲製作</h2>
+
+  <section>
+    <input type="file" id="audioFile" accept="audio/*" />
+    <audio id="audio" controls preload="auto"></audio>
+  </section>
+
+  <section class="lyrics-container">
+    <textarea id="lyricInput" placeholder="每行一句歌詞，可插入 emoji ??????"></textarea>
+  </section>
+
+  <section>
+    <button onclick="exportLRC()">?? 匯出 .lrc</button>
+    <button onclick="exportTXT()">?? 匯出歡歌格式</button>
+  </section>
+
+  <section>
+     <div id="linesOutput"></div>
+  </section>
+  <button onclick="splitLyricsWithRecordButtons()">?? 拆句並設置對拍按鈕</button>
+
+  <script>
+    const audio = document.getElementById("audio");
+    const textarea = document.getElementById("lyricInput");
+    const linesOutput = document.getElementById("linesOutput");
+
+    let lyrics = [], times = [];
+
+    document.getElementById("audioFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      audio.src = url;
+      audio.load();
+    });
+
+    function formatTime(t) {
+      const min = String(Math.floor(t / 60)).padStart(2, "0");
+      const sec = Math.floor(t % 60);
+      const hundredths = Math.floor((t % 1) * 100);
+      return `${min}:${String(sec).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}`;
+    }
+
+    function exportLRC() {
+      const ar = "", ti = "", by = "", al = "";
+      lyrics = textarea.value.trim().split("\n");
+
+      let output = "";
+      output += "[id:$00000000]\n";
+      output += `[ar:${ar}]\n[ti:${ti}]\n[by:${by}]\n[hash:]\n[al:${al}]\n`;
+      output += "[sign:]\n[qq:]\n";
+      output += `[total:${Math.round(audio.duration * 1000)}]\n`;
+      output += "[offset:0]\n";
+      output += "[language:eyJjb250ZW50IjpbXSwidmVyc2lvbiI6MX0=]\n[manualoffset:0]\n\n";
+
+      for (let i = 0; i < lyrics.length && i < times.length; i++) {
+        output += `[${formatTime(times[i])}]${lyrics[i]}\n`;
+      }
+
+      const blob = new Blob(["\uFEFF" + output], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "歌詞.lrc";
+      a.click();
+    }
+
+    function exportTXT() {
+      lyrics = textarea.value.trim().split("\n");
+      let output = "";
+
+      // ? 第一行留空
+      output += "\n";
+
+      for (let i = 0; i < lyrics.length && i < times.length; i++) {
+        const start = Math.round(times[i] * 1000);
+        const end = times[i + 1] ? Math.round((times[i + 1] - times[i]) * 1000) : 3000;
+        output += `[${start},${end}]<0,${end},0>${lyrics[i]}\n`;
+      }
+
+      const blob = new Blob(["\uFEFF" + output], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "歡歌格式.txt";
+      a.click();
+    }
+
+    function splitLyricsWithRecordButtons() {
+      lyrics = textarea.value.trim().split(/[\n\r]+/);
+      linesOutput.innerHTML = "";
+      times = Array(lyrics.length).fill(null);
+
+      lyrics.forEach((line, idx) => {
+        const container = document.createElement("div");
+        container.className = "line-item";
+        container.style.marginBottom = "8px";
+
+        const btn = document.createElement("button");
+        btn.textContent = "?? 記錄";
+        btn.onclick = () => {
+          const t = audio.currentTime;
+          times[idx] = t;
+          timeInput.value = formatTime(t);
+          btn.textContent = `? ${formatTime(t)}`;
+        };
+
+        const minus = document.createElement("button");
+        minus.textContent = "?";
+        minus.onclick = () => {
+          if (times[idx] !== null) {
+            times[idx] = Math.max(0, times[idx] - 0.1);
+            timeInput.value = formatTime(times[idx]);
+          }
+        };
+
+        const plus = document.createElement("button");
+        plus.textContent = "+";
+        plus.onclick = () => {
+          if (times[idx] !== null) {
+            times[idx] += 0.1;
+            timeInput.value = formatTime(times[idx]);
+          }
+        };
+
+        const timeInput = document.createElement("input");
+        timeInput.type = "text";
+        timeInput.placeholder = "00:00.00";
+        timeInput.size = 7;
+        timeInput.addEventListener("change", () => {
+          const [min, sec, hs] = timeInput.value.split(/[:.]/).map(Number);
+          times[idx] = min * 60 + sec + (hs || 0) / 100;
+        });
+
+        const span = document.createElement("span");
+        span.textContent = " " + line;
+
+        container.append(btn, minus, plus, timeInput, span);
+        linesOutput.appendChild(container);
+      });
+    }
+
+    audio.addEventListener("timeupdate", () => {
+      const current = audio.currentTime;
+      let activeIdx = -1;
+
+      for (let i = 0; i < times.length; i++) {
+        if (times[i] !== null && current >= times[i]) {
+          activeIdx = i;
+        }
+      }
+
+      document.querySelectorAll(".line-item").forEach((line, idx) => {
+        line.classList.toggle("active-line", idx === activeIdx);
+        if (idx === activeIdx) {
+          line.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
