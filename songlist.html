@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>底版曲目 - 星雲歌詞製作工具</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      background: #2B5E00;
+      color: #FFFF00;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    a {
+      color: #FFFF00;
+      text-decoration: none;
+      margin-right: 15px;
+      font-size: 16px;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-bar {
+      margin-bottom: 20px;
+      border-bottom: 2px solid #FFFF00;
+      padding-bottom: 10px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .controls input, .controls button {
+      padding: 10px 15px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .controls button {
+      background: #FF8C00;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background-color: #E67E00;
+    }
+
+    #songTable {
+      width: 100%;
+      max-width: 800px;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: black;
+      border: 20px solid;
+      border-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><pattern id="cork" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="%23CD853F"/><circle cx="5" cy="5" r="2" fill="%238B6914" opacity="0.3"/><circle cx="2" cy="3" r="1" fill="%23A0522D" opacity="0.5"/><circle cx="8" cy="7" r="1.5" fill="%238B6914" opacity="0.4"/></pattern></defs><rect width="100" height="100" fill="url(%23cork)"/></svg>') 20 repeat;
+    }
+
+    #songTable thead {
+      background: #FFFACD;
+      color: #0066FF;
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      padding: 15px 0;
+    }
+
+    #songTable thead th {
+      padding: 15px 10px;
+      border-right: 1px solid #333;
+    }
+
+    #songTable thead th:last-child {
+      border-right: none;
+    }
+
+    #songTable tbody tr {
+      border-bottom: 1px solid #333;
+    }
+
+    #songTable tbody td {
+      padding: 12px 10px;
+      color: white;
+      border-right: 1px solid #333;
+      word-wrap: break-word;
+      vertical-align: middle;
+    }
+
+    #songTable tbody td:last-child {
+      border-right: none;
+    }
+
+    /* 第一列 - 數字 */
+    #songTable tbody td:nth-child(1) {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      width: 15%;
+      min-width: 60px;
+    }
+
+    /* 第二列 - 曲名（中文和英文混合） */
+    #songTable tbody td:nth-child(2) {
+      width: 35%;
+      min-width: 200px;
+    }
+
+    /* 第三列 - 歌手（中文和英文混合） */
+    #songTable tbody td:nth-child(3) {
+      width: 35%;
+      min-width: 200px;
+    }
+
+    /* 第四列 - 備註（中文） */
+    #songTable tbody td:nth-child(4) {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      text-align: center;
+      width: 15%;
+      min-width: 60px;
+    }
+
+    .resizable-col {
+      cursor: col-resize;
+    }
+
+    /* 導出圖片的隱藏容器 */
+    #exportContainer {
+      display: none;
+      position: absolute;
+      left: -9999px;
+      width: 800px;
+      height: 800px;
+    }
+
+    #exportTable {
+      width: 100%;
+      height: 100%;
+      border: 20px solid;
+      border-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><pattern id="cork" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="%23CD853F"/><circle cx="5" cy="5" r="2" fill="%238B6914" opacity="0.3"/><circle cx="2" cy="3" r="1" fill="%23A0522D" opacity="0.5"/><circle cx="8" cy="7" r="1.5" fill="%238B6914" opacity="0.4"/></pattern></defs><rect width="100" height="100" fill="url(%23cork)"/></svg>') 20 repeat;
+      border-collapse: collapse;
+      background: black;
+      box-sizing: border-box;
+    }
+
+    #exportTable thead {
+      background: #FFFACD;
+      color: #0066FF;
+      text-align: center;
+      font-weight: bold;
+      height: 60px;
+      font-size: 24px;
+      font-family: 'Microsoft JhengHei', sans-serif;
+    }
+
+    #exportTable thead th {
+      border-right: 2px solid #333;
+      padding: 10px;
+    }
+
+    #exportTable thead th:last-child {
+      border-right: none;
+    }
+
+    #exportTable tbody tr {
+      border-bottom: 2px solid #333;
+      height: 70px;
+    }
+
+    #exportTable tbody td {
+      padding: 8px 10px;
+      color: white;
+      border-right: 2px solid #333;
+      overflow: hidden;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 18px;
+    }
+
+    #exportTable tbody td:nth-child(1) {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      width: 15%;
+    }
+
+    #exportTable tbody td:nth-child(2) {
+      width: 35%;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+
+    #exportTable tbody td:nth-child(3) {
+      width: 35%;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+
+    #exportTable tbody td:nth-child(4) {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      text-align: center;
+      width: 15%;
+    }
+
+    #exportTable tbody td:last-child {
+      border-right: none;
+    }
+
+    .info {
+      text-align: center;
+      margin-top: 20px;
+      color: #FFFF00;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-bar">
+    <a href="index.html">← 回到主頁</a>
+    <a href="songlist.html">📋 底版曲目</a>
+  </div>
+
+  <div class="container">
+    <h2>🎵 底版曲目製作工具</h2>
+
+    <div class="controls">
+      <button onclick="addRow()">➕ 新增行</button>
+      <button onclick="removeLastRow()">➖ 刪除最後一行</button>
+      <button onclick="resetTable()">🔄 清空所有</button>
+      <button onclick="exportAsImage()">💾 匯出 JPG</button>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table id="songTable">
+        <thead>
+          <tr>
+            <th style="width: 15%; min-width: 60px;">編號</th>
+            <th style="width: 35%; min-width: 200px;">曲名</th>
+            <th style="width: 35%; min-width: 200px;">歌手</th>
+            <th style="width: 15%; min-width: 60px;">備註</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="text" class="number-input" placeholder="0001" maxlength="4" style="width: 90%; font-family: Arial;"></td>
+            <td><input type="text" placeholder="曲名" style="width: 100%;"></td>
+            <td><input type="text" placeholder="歌手" style="width: 100%;"></td>
+            <td><input type="text" placeholder="備註" style="width: 90%; text-align: center;"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info">
+      <p>💡 提示：在第一行編號欄輸入起始編號（如0001），按 Tab 鍵自動填充其他行</p>
+      <p>表格寬度可由滑塊調整，但會保持1:1正方形比例</p>
+    </div>
+  </div>
+
+  <!-- 導出用的隱藏容器 -->
+  <div id="exportContainer">
+    <table id="exportTable">
+      <thead>
+        <tr>
+          <th colspan="4">🟫🟧🟨玩🌀地板⭐️目錄🟨🟧🟫</th>
+        </tr>
+      </thead>
+      <tbody id="exportBody">
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const songTable = document.getElementById('songTable');
+    const tbody = songTable.querySelector('tbody');
+
+    // 監聽第一個編號欄的變化
+    document.querySelector('.number-input').addEventListener('change', function() {
+      autoFillNumbers(this.value);
+    });
+
+    // 監聽 Tab 鍵
+    document.querySelector('.number-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Tab' && this.value) {
+        e.preventDefault();
+        autoFillNumbers(this.value);
+      }
+    });
+
+    function autoFillNumbers(startNum) {
+      const rows = tbody.querySelectorAll('tr');
+      let num = parseInt(startNum) || 0;
+
+      rows.forEach((row, index) => {
+        const numberInput = row.querySelector('.number-input');
+        if (numberInput) {
+          numberInput.value = String(num).padStart(4, '0');
+          num++;
+        }
+      });
+    }
+
+    function addRow() {
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td><input type="text" class="number-input" placeholder="編號" maxlength="4" style="width: 90%; font-family: Arial;"></td>
+        <td><input type="text" placeholder="曲名" style="width: 100%;"></td>
+        <td><input type="text" placeholder="歌手" style="width: 100%;"></td>
+        <td><input type="text" placeholder="備註" style="width: 90%; text-align: center;"></td>
+      `;
+      tbody.appendChild(newRow);
+      
+      // 重新自動填充編號
+      const firstNumberInput = tbody.querySelector('.number-input');
+      if (firstNumberInput && firstNumberInput.value) {
+        autoFillNumbers(firstNumberInput.value);
+      }
+    }
+
+    function removeLastRow() {
+      const rows = tbody.querySelectorAll('tr');
+      if (rows.length > 1) {
+        rows[rows.length - 1].remove();
+      }
+    }
+
+    function resetTable() {
+      tbody.innerHTML = `
+        <tr>
+          <td><input type="text" class="number-input" placeholder="0001" maxlength="4" style="width: 90%; font-family: Arial;"></td>
+          <td><input type="text" placeholder="曲名" style="width: 100%;"></td>
+          <td><input type="text" placeholder="歌手" style="width: 100%;"></td>
+          <td><input type="text" placeholder="備註" style="width: 90%; text-align: center;"></td>
+        </tr>
+      `;
+
+      document.querySelector('.number-input').addEventListener('change', function() {
+        autoFillNumbers(this.value);
+      });
+
+      document.querySelector('.number-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Tab' && this.value) {
+          e.preventDefault();
+          autoFillNumbers(this.value);
+        }
+      });
+    }
+
+    function exportAsImage() {
+      const exportBody = document.getElementById('exportBody');
+      const rows = tbody.querySelectorAll('tr');
+
+      exportBody.innerHTML = '';
+
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        const newRow = document.createElement('tr');
+
+        newRow.innerHTML = `
+          <td style="font-family: Arial;">${inputs[0].value || ''}</td>
+          <td>${inputs[1].value || ''}</td>
+          <td>${inputs[2].value || ''}</td>
+          <td>${inputs[3].value || ''}</td>
+        `;
+
+        exportBody.appendChild(newRow);
+      });
+
+      const exportTable = document.getElementById('exportTable');
+      
+      html2canvas(exportTable, {
+        backgroundColor: '#000000',
+        scale: 2,
+        width: 800,
+        height: 800,
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.download = '底版曲目.jpg';
+        
+        // 觸發下載對話框
+        const event = new MouseEvent('click');
+        link.dispatchEvent(event);
+      }).catch(err => {
+        alert('匯出失敗: ' + err.message);
+      });
+    }
+
+    // 初始化 number input 事件
+    document.querySelector('.number-input').addEventListener('change', function() {
+      autoFillNumbers(this.value);
+    });
+
+    document.querySelector('.number-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Tab' && this.value) {
+        e.preventDefault();
+        autoFillNumbers(this.value);
+      }
+    });
+  </script>
+</body>
+</html>
