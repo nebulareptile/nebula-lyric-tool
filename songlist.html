@@ -409,6 +409,7 @@
       // 取得畫面上可見表格的寬度（用於決定輸出正方形尺寸，並保持與畫面一致的大小比例）
       const visibleTable = document.getElementById('songTable');
       const visibleRect = visibleTable.getBoundingClientRect();
+      // 使用畫面上的 CSS 寬度作為輸出邊長，並確保為整數
       const targetSize = Math.round(visibleRect.width) || 800; // 1:1 外框的邊長
 
       // 建立一個正方形的 wrapper，並把複製的表格置中，這樣輸出的圖片為正方形但表格大小與畫面一致
@@ -427,7 +428,7 @@
       // 複製表格並插入 wrapper
       const clone = exportTable.cloneNode(true);
       clone.style.display = 'block';
-      // 設定 clone 的寬度與畫面上一致（確保表格大小比例相同）
+      // 設定 clone 的寬度與畫面上一致（確保表格大小比例相同，使用 CSS 像素）
       clone.style.width = visibleRect.width + 'px';
       clone.style.boxSizing = 'border-box';
 
@@ -440,17 +441,18 @@
       document.body.appendChild(wrapper);
 
       // 使用 html2canvas 擷取 wrapper（square）以確保輸出為 1:1
+      // scale 設為 1 以確保輸出的像素 (canvas.width/height) 與畫面上的 CSS 像素一致
       html2canvas(wrapper, {
         backgroundColor: '#000000',
-        scale: 2,
+        scale: 1,
         width: targetSize,
         height: targetSize,
-        // 忽略畫面截圖中的外部變換
         useCORS: true
       }).then(canvas => {
         const link = document.createElement('a');
-        link.href = canvas.toDataURL('image/jpeg', 0.95);
-        link.download = '底版曲目.jpg';
+        // 直接使用 canvas 的像素結果，這裡 canvas.width === targetSize
+        link.href = canvas.toDataURL('image/png');
+        link.download = '底版曲目.png';
 
         document.body.appendChild(link);
         link.click();
@@ -460,7 +462,7 @@
         const w = document.getElementById('exportWrapperClone');
         if (w) w.remove();
       }).catch(err => {
-        alert('匯出失敗: ' + err.message);
+        alert('匯出失敗: ' + (err && err.message ? err.message : err));
         const w = document.getElementById('exportWrapperClone');
         if (w) w.remove();
       });
