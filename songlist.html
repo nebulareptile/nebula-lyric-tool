@@ -395,10 +395,10 @@
         const newRow = document.createElement('tr');
 
         newRow.innerHTML = `
-          <td style="font-family: Arial;">${inputs[0].value || ''}</td>
-          <td>${inputs[1].value || ''}</td>
-          <td>${inputs[2].value || ''}</td>
-          <td>${inputs[3].value || ''}</td>
+          <td style="font-family: Arial; color: white;">${inputs[0].value || ''}</td>
+          <td style="color: white;">${inputs[1].value || ''}</td>
+          <td style="color: white;">${inputs[2].value || ''}</td>
+          <td style="color: white;">${inputs[3].value || ''}</td>
         `;
 
         exportBody.appendChild(newRow);
@@ -406,37 +406,63 @@
 
       const exportTable = document.getElementById('exportTable');
 
-      // 方法：複製表格並放到 body 的畫面外（但仍可被 html2canvas 擷取）
-      const clone = exportTable.cloneNode(true);
-      clone.style.position = 'absolute';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.display = 'block'; // 確保不是 display:none
-      clone.id = 'exportTableClone';
-      document.body.appendChild(clone);
+      // 取得畫面上可見表格的寬度（用於決定輸出正方形尺寸，並保持與畫面一致的大小比例）
+      const visibleTable = document.getElementById('songTable');
+      const visibleRect = visibleTable.getBoundingClientRect();
+      const targetSize = Math.round(visibleRect.width) || 800; // 1:1 外框的邊長
 
-      // 呼叫 html2canvas 擷取複製節點
-      html2canvas(clone, {
+      // 建立一個正方形的 wrapper，並把複製的表格置中，這樣輸出的圖片為正方形但表格大小與畫面一致
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-9999px';
+      wrapper.style.top = '0';
+      wrapper.style.width = targetSize + 'px';
+      wrapper.style.height = targetSize + 'px';
+      wrapper.style.display = 'flex';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.justifyContent = 'center';
+      wrapper.style.background = '#000';
+      wrapper.id = 'exportWrapperClone';
+
+      // 複製表格並插入 wrapper
+      const clone = exportTable.cloneNode(true);
+      clone.style.display = 'block';
+      // 設定 clone 的寬度與畫面上一致（確保表格大小比例相同）
+      clone.style.width = visibleRect.width + 'px';
+      clone.style.boxSizing = 'border-box';
+
+      // 將導出文字顏色全部強制為白色（user 要求）
+      clone.querySelectorAll('th, td').forEach(el => {
+        el.style.color = 'white';
+      });
+
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      // 使用 html2canvas 擷取 wrapper（square）以確保輸出為 1:1
+      html2canvas(wrapper, {
         backgroundColor: '#000000',
         scale: 2,
-        // 不一定要指定 width/height，html2canvas 會依 clone 的尺寸渲染
+        width: targetSize,
+        height: targetSize,
+        // 忽略畫面截圖中的外部變換
+        useCORS: true
       }).then(canvas => {
         const link = document.createElement('a');
         link.href = canvas.toDataURL('image/jpeg', 0.95);
         link.download = '底版曲目.jpg';
 
-        // 透過 append + click 觸發下載，然後移除
         document.body.appendChild(link);
         link.click();
         link.remove();
 
         // 清理複製節點
-        const c = document.getElementById('exportTableClone');
-        if (c) c.remove();
+        const w = document.getElementById('exportWrapperClone');
+        if (w) w.remove();
       }).catch(err => {
         alert('匯出失敗: ' + err.message);
-        const c = document.getElementById('exportTableClone');
-        if (c) c.remove();
+        const w = document.getElementById('exportWrapperClone');
+        if (w) w.remove();
       });
     }
 
